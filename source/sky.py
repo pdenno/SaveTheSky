@@ -220,6 +220,8 @@ class Game (object):
                 self.grid[i][j].row = i+1
                 self.grid[i+1][j] = self.grid[i][j]
                 self.grid[i+1][j].drop()
+                
+Game()
             
     
 
