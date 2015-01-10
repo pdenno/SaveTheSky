@@ -1,4 +1,4 @@
-#!/home/pdenno/anaconda3/bin/python
+#!/usr/bin/python
 
 import tkinter as tk
 import random
@@ -217,5 +217,6 @@ class Game (object):
                 self.grid[i][j].row = i+1
                 self.grid[i+1][j] = self.grid[i][j]
                 self.grid[i+1][j].drop()
-    
+
+# Remove the comments on the next line if you want to run it by loading it.                
 #Game()
