@@ -42,12 +42,13 @@ class Tile(Thing):
             self.widget.configure(image = self.on_image)
             self.widget.place_forget()
             self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row))
+            
     def drop(self):
         "Slowly drop the widget downward one row."
         self.widget.place_forget()
         self._drop_position = self._drop_position + 1
         self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row-1) + self._drop_position)
-        self._drop_job_id = GAME.root.after(20, self.drop)
+        self._drop_job_id = GAME.root.after(20, self.drop) # Change for faster drop
         if self._drop_position >= TILE_Y_SIZE:
             GAME.root.after_cancel(self._drop_job_id)
             self._drop_position = 0
@@ -148,6 +149,7 @@ class Game (object):
         self.ncols = cols
         GAME = self
         self.start_gui()
+        
     def start_gui (self):
         "Do basic window setup."
         self.root = tk.Tk()
@@ -169,11 +171,14 @@ class Game (object):
                 elif ipick == 5:
                     row.append(Sun(i,j))
             self.grid.append(row)
+            self.redraw()
+            
+    def redraw(self):
         for i in range(self.nrows):
             for j in range(self.ncols):
                  self.grid[i][j].draw()
-        "grid = {0}".format(self.grid)
         self.root.mainloop()
+        
     def three_in_a_row(self):
         '''Return a list of tiles that end a sequence of three or more in a row.'''
         g = self.grid # use a variable so you don't have to type self.grid all the time.
@@ -194,6 +199,7 @@ class Game (object):
                     type1 = type2
                     count_same = 1
         return found
+    
     def deleteTiles(self,tile):
         '''Remove this item. If the tile to its right is the same type, call this again to remove it too.'''
         tile.widget.destroy()
@@ -202,6 +208,7 @@ class Game (object):
             on_left = GAME.grid[tile.row][tile.col-1]
             if type(tile) == type(on_left):
                 self.deleteTiles(on_left)
+                
     def dropTiles(self,start_tile):
         '''Drop tiles above the start_tile and every tile of its type to the left.
         all the way to the top row. Then fill in top row with new tiles.'''
@@ -219,6 +226,20 @@ class Game (object):
                 self.grid[i][j].row = i+1
                 self.grid[i+1][j] = self.grid[i][j]
                 self.grid[i+1][j].drop()
+            # Now fill the top row with new tiles
+            for j in range (icol,icol-len,-1):
+                ipick = random.randint(1,5)
+                if ipick == 1:
+                    self.grid[0][j] = Bird(i,j)
+                elif ipick == 2:
+                    self.grid[0][j] = Cloud(i,j)
+                elif ipick == 3:
+                    self.grid[0][j] = Rain(i,j)
+                elif ipick == 4:
+                    self.grid[0][j] = Snow(i,j)
+                elif ipick == 5:
+                    self.grid[0][j] = Sun(i,j)
+                self.grid[0][j].drop()
 
 # Remove the comments on the next line if you want to run it by loading it.                
 #Game()
