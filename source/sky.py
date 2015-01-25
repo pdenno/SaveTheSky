@@ -6,8 +6,9 @@ import tkinter as tk
 import random
 
 GAME = False
-TILE_X_SIZE = 60
-TILE_Y_SIZE = 60
+TILE_X_SIZE = 53  # Width of tiles in pixels
+TILE_Y_SIZE = 53  # Length of tiles in pixels
+START_MOVES = 5   # Moves the user is allowed
 
 class Thing(object): # "New style objects"
     pass
@@ -73,6 +74,12 @@ class Tile(Thing):
         "neighbors = {0}".format(near_me)
         for near in near_me:
             if near.state == 1:
+                if GAME.moves_count > 0:
+                    GAME.moves_count = GAME.moves_count - 1
+                GAME.movesText.set("Moves\n{0}".format(GAME.moves_count))
+                if GAME.moves_count < 0:
+                    d = EndOfGameDialog(GAME.root)
+                    GAME.root.wait_window(d.top)
                 hold_row = self.row
                 hold_col = self.col
                 self.row = near.row
@@ -121,29 +128,28 @@ class Tile(Thing):
 # that the game item is to appear on, and sets the 'off' and 'on' images.
 class Bird(Tile):
     def __init__(self,irow,icol):
-        super(Bird,self).__init__(irow,icol,"../images/bird60OFF.gif", "../images/bird60ON.gif")
+        super(Bird,self).__init__(irow,icol,"../images/bird53OFF.gif", "../images/bird53ON.gif")
 
 class Cloud(Tile):
     def __init__(self,irow,icol):
-        super(Cloud,self).__init__(irow,icol,"../images/cloud60OFF.gif","../images/cloud60ON.gif")
+        super(Cloud,self).__init__(irow,icol,"../images/cloud53OFF.gif","../images/cloud53ON.gif")
 
 class Snow(Tile): 
     def __init__(self,irow,icol):
-        super(Snow,self).__init__(irow,icol,"../images/snow60OFF.gif","../images/snow60ON.gif")
+        super(Snow,self).__init__(irow,icol,"../images/snow53OFF.gif","../images/snow53ON.gif")
 
 class Rain(Tile): 
     def __init__(self,irow,icol):
-        super(Rain,self).__init__(irow,icol,"../images/rain60OFF.gif","../images/rain60ON.gif")
+        super(Rain,self).__init__(irow,icol,"../images/rain53OFF.gif","../images/rain53ON.gif")
 
 class Sun(Tile): 
     def __init__(self,irow,icol):
-        super(Sun,self).__init__(irow,icol,"../images/sun60OFF.gif","../images/sun60ON.gif")
+        super(Sun,self).__init__(irow,icol,"../images/sun53OFF.gif","../images/sun53ON.gif")
 
         
 class Game (object):
     def __init__(self,rows=5,cols=7):
         global GAME
-        self.grid = []
         self.nrows = rows
         self.ncols = cols
         GAME = self
@@ -155,6 +161,14 @@ class Game (object):
         self.root.geometry("480x320+0+0") # Size of our Raspberry Pi screen
         self.canvas = tk.Canvas(self.root, width = 480, height = 320, bg = 'LightBlue')
         self.canvas.pack()
+        self.newgame()
+
+    def newgame(self):
+        "Start or restart with new tiles."
+        self.grid = []
+        self.moves_count = START_MOVES
+        self.movesText = tk.StringVar()
+        self.movesText.set("Moves\n{0}".format(self.moves_count))
         for i in range(self.nrows): # Walk through the rows
             row = []
             for j in range(self.ncols): # Walk through the columns
@@ -173,9 +187,12 @@ class Game (object):
         self.redraw()
             
     def redraw(self):
+        'Redraw the whole board'
         for i in range(self.nrows):
             for j in range(self.ncols):
                 self.grid[i][j].draw()
+        self.moves = tk.Label(self.canvas, textvariable=self.movesText, bg="LightBlue", font=("",20))
+        self.moves.place(x=390, y=10)
         self.root.mainloop()
         
     def three_in_a_row(self):
@@ -240,6 +257,22 @@ class Game (object):
                 self.grid[0][j] = Sun(0,j)
             #self.grid[0][j].drop()
             GAME.root.after(2000,self.grid[0][j].drop)
+
+
+class EndOfGameDialog:
+    def __init__(self, parent):
+        top = self.top = tk.Toplevel(parent)
+        tk.Label(top, text="Sorry, Game Over").pack()
+        b = tk.Button(top, text="New Game", command=self.ok)
+        b.pack(pady=5)
+        top.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
+    def ok(self):
+        global GAME
+        self.top.destroy()
+        GAME.newgame()
+
+
+
 
 # Remove the comments on the next line if you want to run it by loading it.                
 #Game()
