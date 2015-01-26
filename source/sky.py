@@ -74,6 +74,12 @@ class Tile(Thing):
             self.state = 0 
             self.draw()
             "End button press {0}, self.state = {1}".format(self,self.state)
+
+    def forget(self):
+        "Remove the tile. Destroy it's widget."
+        self.state = -1
+        self.widget.pack_forget()
+        self.widget.destroy()
             
     def maybeSwap(self):
         '''Check tiles next to self. If ON, then swap and turn both off'''
@@ -157,6 +163,7 @@ class Game (object):
         GAME = self  
         self.nrows = rows
         self.ncols = cols
+        self.grid = []
         self.start_gui()
 
     def start_gui (self):
@@ -169,6 +176,10 @@ class Game (object):
 
     def new_game(self):
         "Start or restart with new tiles."
+        if len(self.grid) > 0: # If tiles from old game, get rid of them.
+            for i in range(len(self.grid)):
+                for j in range(len(self.grid[i])):
+                    self.grid[i][j].forget()
         self.grid = []
 
         self.moves = START_MOVES
@@ -246,11 +257,9 @@ class Game (object):
     
     def deleteTiles(self,tile):
         '''Remove this item, add to score. If the tile to its right is the same type, call this again to remove it too.'''
-        tile.widget.pack_forget()
-        tile.widget.destroy()
+        tile.forget()
         GAME.score = GAME.score + 100
         GAME.scoreText.set("Score\n{0}".format(GAME.score))
-        tile.state = -1
         if (tile.col > 0):
             on_left = GAME.grid[tile.row][tile.col-1]
             if type(tile) == type(on_left):
