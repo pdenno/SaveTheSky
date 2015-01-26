@@ -275,7 +275,7 @@ class Game (object):
         # Now fill the top row with new tiles
         for j in range (icol,icol-len,-1):
             self.grid[0][j] = GAME.new_random_tile(0,j)
-            GAME.root.after(2000,self.grid[0][j].drop)
+            GAME.root.after(1500,self.grid[0][j].drop)
 
 
 class EndOfGameDialog:
@@ -290,4 +290,5 @@ class EndOfGameDialog:
         self.top.destroy()
         GAME.new_game()
 
+#Start the game!
 Game()
