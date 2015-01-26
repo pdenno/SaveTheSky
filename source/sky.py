@@ -36,14 +36,11 @@ class Tile(Thing):
     
     def draw(self):
         "Place the widget on the screen."
-        #"Drawing {0} at x = {1}, y={2}".format(self,TILE_X_SIZE*((self.col)-1),TILE_Y_SIZE*((self.row)-1))
-        #"Drawing {0}, self.state = {1}".format(self,self.state)
         if self.state == 0:
             self.widget.configure(image = self.off_image)
             self.widget.place_forget()
             self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row))
         elif self.state == 1:
-            "Tile ({0},{1}) state is {2}.".format(self.row, self.col, self.state)
             self.widget.configure(image = self.on_image)
             self.widget.place_forget()
             self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row))
@@ -60,20 +57,16 @@ class Tile(Thing):
             
     def buttonPress(self):
         "If off, turn on. If on, turn off by changing state and image."
-        "\n\nStart button press {0}, self.state = {1}".format(self,self.state)        
         if self.state == 0:
             self.state = 1
             self.draw()
-            self.maybeSwap() 
-            for item in GAME.three_in_a_row():
-                GAME.deleteTiles(item)
-                GAME.dropTiles(item)
+            self.maybe_swap() 
+            GAME.root.after(1000,GAME.check_for_score)
             if GAME.moves <= 0:
-                GAME.root.wait_window(EndOfGameDialog(GAME.root).top)
+                GAME.root.after(500,GAME.show_end_of_game_dialog)
         else:
             self.state = 0 
             self.draw()
-            "End button press {0}, self.state = {1}".format(self,self.state)
 
     def forget(self):
         "Remove the tile. Destroy it's widget."
@@ -81,14 +74,12 @@ class Tile(Thing):
         self.widget.pack_forget()
         self.widget.destroy()
             
-    def maybeSwap(self):
+    def maybe_swap(self):
         '''Check tiles next to self. If ON, then swap and turn both off'''
         near_me = self.neighbors()
-        "neighbors = {0}".format(near_me)
         for near in near_me:
-            if near.state == 1:
-                if GAME.moves > 0:
-                    GAME.moves = GAME.moves - 1
+            if near.state == 1: # then swap
+                GAME.moves = GAME.moves - 1
                 GAME.movesText.set("Moves\n{0}".format(GAME.moves))
                 hold_row = self.row
                 hold_col = self.col
@@ -108,7 +99,6 @@ class Tile(Thing):
         n = False
         r = self.row
         c = self.col
-        "r = {0} c = {1}".format(r, c)
         last_row = GAME.nrows-1
         last_col = GAME.ncols-1
         # first see if it is a corner...
@@ -164,6 +154,7 @@ class Game (object):
         self.nrows = rows
         self.ncols = cols
         self.grid = []
+        self.showing_end = False
         self.start_gui()
 
     def start_gui (self):
@@ -181,6 +172,7 @@ class Game (object):
                 for j in range(len(self.grid[i])):
                     self.grid[i][j].forget()
         self.grid = []
+        self.showing_end = False
 
         self.moves = START_MOVES
         self.movesText = tk.StringVar()
@@ -234,6 +226,17 @@ class Game (object):
             elif ipick == 5 and not_class != 'Sun':
                 return(Sun(i,j))
 
+    def check_for_score(self):
+        'See if three in a row. If so delete them and score.'
+        for tile in self.three_in_a_row():
+            self.deleteTiles(tile)
+            self.dropTiles(tile)
+            
+    def show_end_of_game_dialog(self):
+        if not self.showing_end:
+            self.showing_end = True
+            self.root.wait_window(EndOfGameDialog(self.root).top)
+
     def three_in_a_row(self):
         '''Return a list of tiles that end a sequence of three or more in a row.'''
         g = self.grid # use a variable so you don't have to type self.grid all the time.
@@ -258,10 +261,10 @@ class Game (object):
     def deleteTiles(self,tile):
         '''Remove this item, add to score. If the tile to its right is the same type, call this again to remove it too.'''
         tile.forget()
-        GAME.score = GAME.score + 100
-        GAME.scoreText.set("Score\n{0}".format(GAME.score))
+        self.score = self.score + 100
+        self.scoreText.set("Score\n{0}".format(self.score))
         if (tile.col > 0):
-            on_left = GAME.grid[tile.row][tile.col-1]
+            on_left = self.grid[tile.row][tile.col-1]
             if type(tile) == type(on_left):
                 self.deleteTiles(on_left)
                 
@@ -277,14 +280,15 @@ class Game (object):
             len = 5
         for i in range (irow-1,-1,-1):
             for j in range(icol,icol-len,-1):
-                " \n Dropping into ({0},{1}), state = {2}".format(i+1, j, self.grid[i+1][j].state)
                 self.grid[i][j].row = i+1
                 self.grid[i+1][j] = self.grid[i][j]
                 self.grid[i+1][j].drop()
         # Now fill the top row with new tiles
         for j in range (icol,icol-len,-1):
-            self.grid[0][j] = GAME.new_random_tile(0,j)
-            GAME.root.after(1500,self.grid[0][j].drop)
+            self.grid[0][j] = self.new_random_tile(0,j)
+            self.root.after(1500,self.grid[0][j].drop)
+        # Then check if more scoring is possible
+        #self.root.after(1500,self.check_for_score)
 
 
 class EndOfGameDialog:
