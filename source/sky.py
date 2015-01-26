@@ -1,9 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Test 2015-01-10
 
 import tkinter as tk
 import random
+import os
+import getpass
+
+os.chdir("/home/{0}/SkySwitch/source".format(getpass.getuser()))
 
 GAME = False
 TILE_X_SIZE = 53  # Width of tiles in pixels
@@ -272,6 +276,5 @@ class EndOfGameDialog:
 
 
 
-
 # Remove the comments on the next line if you want to run it by loading it.                
-#Game()
+Game()
