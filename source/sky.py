@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# Test 2015-01-10
-
 import tkinter as tk
 import random
 import os
@@ -126,7 +124,7 @@ class Tile(Thing):
         elif c == 0: # left edge
             n = [GAME.grid[r-1][0],GAME.grid[r+1][0],GAME.grid[r][1]]
         # It is not a corner or and edge...
-        else: # everything that isn't a corder or edge looks like this
+        else: # everything that isn't a corner or edge looks like this:
             n = [GAME.grid[r][c-1],GAME.grid[r+1][c],GAME.grid[r][c+1],GAME.grid[r-1][c]]
         return n
 
@@ -212,9 +210,9 @@ class Game (object):
 
     def new_random_tile(self, i, j, not_class='any'):
         'Return a new random tile at row I, column J.'
-        ipick = random.randint(1,5)
         while True:
-            if ipick == 1 and not_class != 'Bird':
+            ipick = random.randint(1,5)
+            if   ipick == 1 and not_class != 'Bird':
                 return(Bird(i,j))
             elif ipick == 2 and not_class != 'Cloud':
                 return(Cloud(i,j))
@@ -292,7 +290,4 @@ class EndOfGameDialog:
         self.top.destroy()
         GAME.new_game()
 
-
-
-# Remove the comments on the next line if you want to run it by loading it.                
 Game()
