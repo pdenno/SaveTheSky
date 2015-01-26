@@ -10,8 +10,8 @@ import getpass
 os.chdir("/home/{0}/SkySwitch/source".format(getpass.getuser()))
 
 GAME = False
-TILE_X_SIZE = 53  # Width of tiles in pixels
-TILE_Y_SIZE = 53  # Length of tiles in pixels
+TILE_X_SIZE = 52  # Width of tiles in pixels
+TILE_Y_SIZE = 52  # Length of tiles in pixels
 START_MOVES = 5   # Moves the user is allowed
 
 class Thing(object): # "New style objects"
@@ -32,6 +32,9 @@ class Tile(Thing):
         
     def __repr__(self):
         return "<%s (%s %s)>" % (self.__class__.__name__, self.row, self.col)
+
+    def class_name(self):
+        self.__class__.__name__
     
     def draw(self):
         "Place the widget on the screen."
@@ -41,7 +44,7 @@ class Tile(Thing):
             self.widget.configure(image = self.off_image)
             self.widget.place_forget()
             self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row))
-        else:  #  self.state == 1
+        elif self.state == 1:
             "Tile ({0},{1}) state is {2}.".format(self.row, self.col, self.state)
             self.widget.configure(image = self.on_image)
             self.widget.place_forget()
@@ -50,9 +53,9 @@ class Tile(Thing):
     def drop(self):
         "Slowly drop the widget downward one row."
         self.widget.place_forget()
-        self._drop_position = self._drop_position + 1
+        self._drop_position = self._drop_position + 4
         self.widget.place(x=TILE_X_SIZE*(self.col), y=TILE_Y_SIZE*(self.row-1) + self._drop_position)
-        self._drop_job_id = GAME.root.after(15, self.drop) # Change for faster drop
+        self._drop_job_id = GAME.root.after(60, self.drop) # Change for faster drop
         if self._drop_position >= TILE_Y_SIZE:
             GAME.root.after_cancel(self._drop_job_id)
             self._drop_position = 0
@@ -67,7 +70,7 @@ class Tile(Thing):
             for item in GAME.three_in_a_row():
                 GAME.deleteTiles(item)
                 GAME.dropTiles(item)
-            if GAME.moves_count <= 0:
+            if GAME.moves <= 0:
                 GAME.root.wait_window(EndOfGameDialog(GAME.root).top)
         else:
             self.state = 0 
@@ -80,9 +83,9 @@ class Tile(Thing):
         "neighbors = {0}".format(near_me)
         for near in near_me:
             if near.state == 1:
-                if GAME.moves_count > 0:
-                    GAME.moves_count = GAME.moves_count - 1
-                GAME.movesText.set("Moves\n{0}".format(GAME.moves_count))
+                if GAME.moves > 0:
+                    GAME.moves = GAME.moves - 1
+                GAME.movesText.set("Moves\n{0}".format(GAME.moves))
                 hold_row = self.row
                 hold_col = self.col
                 self.row = near.row
@@ -131,31 +134,31 @@ class Tile(Thing):
 # that the game item is to appear on, and sets the 'off' and 'on' images.
 class Bird(Tile):
     def __init__(self,irow,icol):
-        super(Bird,self).__init__(irow,icol,"../images/bird53OFF.gif", "../images/bird53ON.gif")
+        super(Bird,self).__init__(irow,icol,"../images/bird52OFF.gif", "../images/bird52ON.gif")
 
 class Cloud(Tile):
     def __init__(self,irow,icol):
-        super(Cloud,self).__init__(irow,icol,"../images/cloud53OFF.gif","../images/cloud53ON.gif")
+        super(Cloud,self).__init__(irow,icol,"../images/cloud52OFF.gif","../images/cloud52ON.gif")
 
 class Snow(Tile): 
     def __init__(self,irow,icol):
-        super(Snow,self).__init__(irow,icol,"../images/snow53OFF.gif","../images/snow53ON.gif")
+        super(Snow,self).__init__(irow,icol,"../images/snow52OFF.gif","../images/snow52ON.gif")
 
 class Rain(Tile): 
     def __init__(self,irow,icol):
-        super(Rain,self).__init__(irow,icol,"../images/rain53OFF.gif","../images/rain53ON.gif")
+        super(Rain,self).__init__(irow,icol,"../images/rain52OFF.gif","../images/rain52ON.gif")
 
 class Sun(Tile): 
     def __init__(self,irow,icol):
-        super(Sun,self).__init__(irow,icol,"../images/sun53OFF.gif","../images/sun53ON.gif")
+        super(Sun,self).__init__(irow,icol,"../images/sun52OFF.gif","../images/sun52ON.gif")
 
         
 class Game (object):
     def __init__(self,rows=5,cols=7):
         global GAME
+        GAME = self  
         self.nrows = rows
         self.ncols = cols
-        GAME = self
         self.start_gui()
 
     def start_gui (self):
@@ -164,29 +167,31 @@ class Game (object):
         self.root.geometry("480x320+0+0") # Size of our Raspberry Pi screen
         self.canvas = tk.Canvas(self.root, width = 480, height = 320, bg = 'LightBlue')
         self.canvas.pack()
-        self.newgame()
+        self.new_game()
 
-    def newgame(self):
+    def new_game(self):
         "Start or restart with new tiles."
         self.grid = []
-        self.moves_count = START_MOVES
+
+        self.moves = START_MOVES
         self.movesText = tk.StringVar()
-        self.movesText.set("Moves\n{0}".format(self.moves_count))
+        self.movesText.set("Moves\n{0}".format(self.moves))
+
+        self.score = 0
+        self.scoreText = tk.StringVar()
+        self.scoreText.set("Score\n{0}".format(self.score))
+
         for i in range(self.nrows): # Walk through the rows
             row = []
             for j in range(self.ncols): # Walk through the columns
-                ipick = random.randint(1,5)
-                if ipick == 1:
-                    row.append(Bird(i,j))
-                elif ipick == 2:
-                    row.append(Cloud(i,j))
-                elif ipick == 3:
-                    row.append(Rain(i,j))
-                elif ipick == 4:
-                    row.append(Snow(i,j))
-                elif ipick == 5:
-                    row.append(Sun(i,j))
+                row.append(self.new_random_tile(i,j))
             self.grid.append(row)
+        # Where there are three in a row of some tile, break it up by placing another kind of tile.
+        while len(self.three_in_a_row()) > 0:
+            for end_tile in self.three_in_a_row():
+                i = end_tile.row
+                j = end_tile.col-2 # change the tile two tiles to the left
+                self.grid[i][j] =  self.new_random_tile(i,j,not_class=end_tile.class_name())
         self.redraw()
             
     def redraw(self):
@@ -194,10 +199,32 @@ class Game (object):
         for i in range(self.nrows):
             for j in range(self.ncols):
                 self.grid[i][j].draw()
-        self.moves = tk.Label(self.canvas, textvariable=self.movesText, bg="LightBlue", font=("",20))
-        self.moves.place(x=390, y=10)
+
+        self.moves_widget = tk.Label(self.canvas, textvariable=self.movesText, bg="LightBlue", font=("",20))
+        self.moves_widget.place(x=390, y=10)
+
+        self.score_widget = tk.Label(self.canvas, textvariable=self.scoreText, bg="LightBlue", font=("",20))
+        self.score_widget.place(x=390, y=110)
+
+        self.new_game_button = tk.Button(self.canvas, text="New Game", command=self.new_game)
+        self.new_game_button.place(x=390, y=250)
         self.root.mainloop()
-        
+
+    def new_random_tile(self, i, j, not_class='any'):
+        'Return a new random tile at row I, column J.'
+        ipick = random.randint(1,5)
+        while True:
+            if ipick == 1 and not_class != 'Bird':
+                return(Bird(i,j))
+            elif ipick == 2 and not_class != 'Cloud':
+                return(Cloud(i,j))
+            elif ipick == 3 and not_class != 'Rain':
+                return(Rain(i,j))
+            elif ipick == 4 and not_class != 'Snow':
+                return(Snow(i,j))
+            elif ipick == 5 and not_class != 'Sun':
+                return(Sun(i,j))
+
     def three_in_a_row(self):
         '''Return a list of tiles that end a sequence of three or more in a row.'''
         g = self.grid # use a variable so you don't have to type self.grid all the time.
@@ -220,8 +247,11 @@ class Game (object):
         return found
     
     def deleteTiles(self,tile):
-        '''Remove this item. If the tile to its right is the same type, call this again to remove it too.'''
+        '''Remove this item, add to score. If the tile to its right is the same type, call this again to remove it too.'''
+        tile.widget.pack_forget()
         tile.widget.destroy()
+        GAME.score = GAME.score + 100
+        GAME.scoreText.set("Score\n{0}".format(GAME.score))
         tile.state = -1
         if (tile.col > 0):
             on_left = GAME.grid[tile.row][tile.col-1]
@@ -231,7 +261,6 @@ class Game (object):
     def dropTiles(self,start_tile):
         '''Drop tiles above the start_tile and every tile of its type to the left.
         all the way to the top row. Then fill in top row with new tiles.'''
-        "Dropping starting at {0}".format(start_tile)
         irow = start_tile.row
         icol = start_tile.col
         len = 3
@@ -247,18 +276,7 @@ class Game (object):
                 self.grid[i+1][j].drop()
         # Now fill the top row with new tiles
         for j in range (icol,icol-len,-1):
-            ipick = random.randint(1,5)
-            if ipick == 1:
-                self.grid[0][j] = Bird(0,j)
-            elif ipick == 2:
-                self.grid[0][j] = Cloud(0,j)
-            elif ipick == 3:
-                self.grid[0][j] = Rain(0,j)
-            elif ipick == 4:
-                self.grid[0][j] = Snow(0,j)
-            elif ipick == 5:
-                self.grid[0][j] = Sun(0,j)
-            #self.grid[0][j].drop()
+            self.grid[0][j] = GAME.new_random_tile(0,j)
             GAME.root.after(2000,self.grid[0][j].drop)
 
 
@@ -272,7 +290,7 @@ class EndOfGameDialog:
     def ok(self):
         global GAME
         self.top.destroy()
-        GAME.newgame()
+        GAME.new_game()
 
 
 
