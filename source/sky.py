@@ -63,6 +63,8 @@ class Tile(Thing):
             for item in GAME.three_in_a_row():
                 GAME.deleteTiles(item)
                 GAME.dropTiles(item)
+            if GAME.moves_count <= 0:
+                GAME.root.wait_window(EndOfGameDialog(GAME.root).top)
         else:
             self.state = 0 
             self.draw()
@@ -77,9 +79,6 @@ class Tile(Thing):
                 if GAME.moves_count > 0:
                     GAME.moves_count = GAME.moves_count - 1
                 GAME.movesText.set("Moves\n{0}".format(GAME.moves_count))
-                if GAME.moves_count < 0:
-                    d = EndOfGameDialog(GAME.root)
-                    GAME.root.wait_window(d.top)
                 hold_row = self.row
                 hold_col = self.col
                 self.row = near.row
@@ -262,7 +261,7 @@ class Game (object):
 class EndOfGameDialog:
     def __init__(self, parent):
         top = self.top = tk.Toplevel(parent)
-        tk.Label(top, text="Sorry, Game Over").pack()
+        tk.Label(top, text="Game Over", bg="LightGreen", font=("",20)).pack()
         b = tk.Button(top, text="New Game", command=self.ok)
         b.pack(pady=5)
         top.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
